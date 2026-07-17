@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import prisma from '../lib/prisma';
 
 export const taskService = {
@@ -300,7 +301,7 @@ export const taskService = {
     const newCompletedChapters = task.completedChapters + 1;
     const shouldMarkDone = newCompletedChapters >= task.totalChapters;
 
-    return prisma.$transaction(async (tx) => {
+    return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       // 1. 更新任务的已完成章节数，必要时标记为 DONE
       const updatedTask = await tx.task.update({
         where: { id, userId },

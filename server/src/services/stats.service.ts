@@ -60,7 +60,7 @@ export const statsService = {
       },
       orderBy: { date: 'asc' },
     });
-    return stats.map((s) => ({
+    return stats.map((s: { date: Date; totalFocusSec: number; completedPomos: number; completedTasks: number; interruptedPomos: number }) => ({
       date: s.date.toISOString().split('T')[0],
       totalFocusSec: s.totalFocusSec,
       completedPomos: s.completedPomos,
@@ -86,14 +86,14 @@ export const statsService = {
       orderBy: { _sum: { duration: 'desc' } },
     });
 
-    const taskIds = records.map((r) => r.taskId);
+    const taskIds = records.map((r: { taskId: string }) => r.taskId);
     const tasks = await prisma.task.findMany({
       where: { id: { in: taskIds } },
       select: { id: true, title: true },
     });
-    const taskMap = new Map(tasks.map((t) => [t.id, t]));
+    const taskMap = new Map<string, { id: string; title: string }>(tasks.map((t: { id: string; title: string }) => [t.id, t]));
 
-    return records.map((r) => ({
+    return records.map((r: { taskId: string; _sum: { duration: number | null }; _count: { id: number } }) => ({
       taskId: r.taskId,
       title: taskMap.get(r.taskId)?.title || '已删除的任务',
       totalFocusSec: r._sum.duration || 0,
@@ -153,16 +153,16 @@ export const statsService = {
       orderBy: { sortOrder: 'asc' },
     });
 
-    return lists.map((list) => {
+    return lists.map((list: { id: string; name: string; color: string; tasks: { id: string; status: string; sectionId: string | null }[]; sections: { id: string; name: string; sortOrder: number; tasks: { id: string; status: string }[] }[] }) => {
       const totalTasks = list.tasks.length;
-      const doneTasks = list.tasks.filter((t) => t.status === 'DONE').length;
-      const inProgressTasks = list.tasks.filter((t) => t.status === 'IN_PROGRESS').length;
-      const todoTasks = list.tasks.filter((t) => t.status === 'TODO').length;
+      const doneTasks = list.tasks.filter((t: { status: string }) => t.status === 'DONE').length;
+      const inProgressTasks = list.tasks.filter((t: { status: string }) => t.status === 'IN_PROGRESS').length;
+      const todoTasks = list.tasks.filter((t: { status: string }) => t.status === 'TODO').length;
       const completionRate = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0;
 
-      const sections = list.sections.map((section) => {
+      const sections = list.sections.map((section: { id: string; name: string; sortOrder: number; tasks: { id: string; status: string }[] }) => {
         const sectionTotal = section.tasks.length;
-        const sectionDone = section.tasks.filter((t) => t.status === 'DONE').length;
+        const sectionDone = section.tasks.filter((t: { status: string }) => t.status === 'DONE').length;
         const sectionRate = sectionTotal > 0 ? Math.round((sectionDone / sectionTotal) * 100) : 0;
         return {
           sectionId: section.id,

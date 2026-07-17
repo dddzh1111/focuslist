@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import prisma from '../lib/prisma';
 import { taskService } from './task.service';
 
@@ -13,7 +14,7 @@ export const pomodoroService = {
       completed?: boolean;
     }
   ) {
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       // 1. 创建番茄记录
       const record = await tx.pomodoroRecord.create({
         data: {
@@ -96,7 +97,7 @@ export const pomodoroService = {
     });
 
     const completedPomos = records.length;
-    const totalFocusSec = records.reduce((sum, r) => sum + r.duration, 0);
+    const totalFocusSec = records.reduce((sum: number, r) => sum + r.duration, 0);
 
     return { completedPomos, totalFocusSec, records };
   },
