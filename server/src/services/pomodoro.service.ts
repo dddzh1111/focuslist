@@ -97,7 +97,7 @@ export const pomodoroService = {
     });
 
     const completedPomos = records.length;
-    const totalFocusSec = records.reduce((sum: number, r) => sum + r.duration, 0);
+    const totalFocusSec = records.reduce((sum: number, r: { duration: number }) => sum + r.duration, 0);
 
     return { completedPomos, totalFocusSec, records };
   },
