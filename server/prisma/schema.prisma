@@ -1,0 +1,161 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String   @default("FocusList User")
+  settings  String   @default("{\"focusDuration\":25,\"shortBreakDuration\":5,\"longBreakDuration\":15,\"longBreakInterval\":4,\"autoStartBreak\":false,\"autoStartFocus\":false,\"whiteNoise\":\"none\",\"volume\":80}")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  lists     List[]
+  tasks     Task[]
+  pomodoros PomodoroRecord[]
+  dailyStats DailyStats[]
+}
+
+model List {
+  id        String   @id @default(uuid())
+  name      String
+  color     String   @default("#3B82F6")
+  icon      String   @default("list")
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  tasks    Task[]
+  sections Section[]
+
+  @@index([userId])
+}
+
+// ==================== 单元分组（清单内编号单元 1,2,3...） ====================
+model Section {
+  id        String   @id @default(uuid())
+  name      String                     // 如 "第1单元"、"模块一"
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  listId String
+  list   List   @relation(fields: [listId], references: [id], onDelete: Cascade)
+
+  tasks Task[]
+
+  @@index([listId])
+}
+
+model Task {
+  id             String    @id @default(uuid())
+  title          String
+  description    String    @default("")
+  priority       Priority  @default(MEDIUM)
+  status         Status    @default(TODO)
+  dueDate        DateTime?
+  estimatedPomos Int       @default(0)
+  focusDuration  Int       @default(0)  // 单次番茄时长(分钟)，0=使用全局默认
+  completedPomos Int       @default(0)
+  totalFocusTime Int       @default(0)
+  tags           String    @default("[]")
+  sortOrder      Int       @default(0)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  completedAt    DateTime?
+
+  // 长期/短期任务区分
+  isLongTerm         Boolean  @default(false)
+  totalChapters      Int      @default(0)   // 长期任务的总章节数
+  completedChapters  Int      @default(0)   // 长期任务已完成的章节数
+  chapterCompletions String   @default("[]")  // JSON数组，记录已完成章节编号 [1,2,5]
+
+  // 短期任务的来源追踪（从长期任务选取）
+  sourceTaskId String?
+  sourceTask   Task?   @relation("TaskSource", fields: [sourceTaskId], references: [id], onDelete: SetNull)
+  derivedTasks Task[]  @relation("TaskSource")
+
+  parentId String?
+  parent   Task?   @relation("SubTasks", fields: [parentId], references: [id], onDelete: SetNull)
+  children Task[]  @relation("SubTasks")
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  listId String?
+  list   List?  @relation(fields: [listId], references: [id], onDelete: SetNull)
+
+  sectionId String?
+  section   Section? @relation(fields: [sectionId], references: [id], onDelete: SetNull)
+
+  pomodoros PomodoroRecord[]
+
+  @@index([userId, status])
+  @@index([userId, priority])
+  @@index([userId, listId])
+  @@index([userId, sectionId])
+  @@index([parentId])
+  @@index([userId, isLongTerm])
+  @@index([sourceTaskId])
+}
+
+model PomodoroRecord {
+  id            String       @id @default(uuid())
+  startTime     DateTime
+  endTime       DateTime?
+  duration      Int
+  type          PomodoroType @default(FOCUS)
+  completed     Boolean      @default(false)
+  interruptedAt DateTime?
+  createdAt     DateTime     @default(now())
+
+  taskId String
+  task   Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([taskId])
+  @@index([userId, type])
+}
+
+model DailyStats {
+  id              String   @id @default(uuid())
+  date            DateTime
+  totalFocusSec   Int      @default(0)
+  completedPomos  Int      @default(0)
+  completedTasks  Int      @default(0)
+  interruptedPomos Int     @default(0)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+  @@index([userId, date])
+}
+
+enum Priority {
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum Status {
+  TODO
+  IN_PROGRESS
+  DONE
+}
+
+enum PomodoroType {
+  FOCUS
+  SHORT_BREAK
+  LONG_BREAK
+}

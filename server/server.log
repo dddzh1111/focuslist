@@ -1,0 +1,15 @@
+[FocusList Server] 运行在 http://localhost:3001
+[FocusList Server] 环境: development
+Unhandled error: TypeError: Cannot set property query of #<IncomingMessage> which has only a getter
+    at <anonymous> (c:\Users\97965\CodeBuddy\20260717203011\server\src\middleware\validate.ts:8:17)
+    at Layer.handleRequest (c:\Users\97965\CodeBuddy\20260717203011\server\node_modules\router\lib\layer.js:152:17)
+    at next (c:\Users\97965\CodeBuddy\20260717203011\server\node_modules\router\lib\route.js:157:13)
+    at Route.dispatch (c:\Users\97965\CodeBuddy\20260717203011\server\node_modules\router\lib\route.js:117:3)
+    at handle (c:\Users\97965\CodeBuddy\20260717203011\server\node_modules\router\index.js:435:11)
+    at Layer.handleRequest (c:\Users\97965\CodeBuddy\20260717203011\server\node_modules\router\lib\layer.js:152:17)
+    at c:\Users\97965\CodeBuddy\20260717203011\server\node_modules\router\index.js:295:15
+    at processParams (c:\Users\97965\CodeBuddy\20260717203011\server\node_modules\router\index.js:582:12)
+    at next (c:\Users\97965\CodeBuddy\20260717203011\server\node_modules\router\index.js:291:5)
+    at ensureUser (c:\Users\97965\CodeBuddy\20260717203011\server\src\routes\task.routes.ts:22:5)
+
+c:\Users\97965\CodeBuddy\20260717203011\server>

@@ -1,0 +1,22 @@
+{
+  "version": "2.0",
+  "envId": "focuslist-prod-d7gbj4co16a899551",
+  "framework": {
+    "name": "focuslist",
+    "plugins": {
+      "server": {
+        "use": "@cloudbase/framework-plugin-container",
+        "inputs": {
+          "serviceName": "focuslist",
+          "servicePath": "/",
+          "localPath": ".",
+          "dockerfile": "Dockerfile",
+          "containerPort": 3001,
+          "envParams": {
+            "DATABASE_URL": "postgresql://user:password@host:port/postgres"
+          }
+        }
+      }
+    }
+  }
+}
