@@ -34,5 +34,5 @@ ENV SERVER_PORT=3001
 
 EXPOSE 3001
 
-# 启动前自动同步数据库结构（db push 对空库安全且幂等），然后启动服务
-CMD ["sh", "-c", "npx prisma db push --skip-generate && node dist/index.js"]
+# 使用迁移方式部署数据库结构（避免 db push 权限问题），然后启动服务
+CMD ["sh", "-c", "npx prisma migrate deploy && node dist/index.js"]
