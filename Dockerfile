@@ -34,5 +34,7 @@ ENV SERVER_PORT=3001
 
 EXPOSE 3001
 
-# 使用迁移方式部署数据库结构（避免 db push 权限问题），然后启动服务
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/index.js"]
+# 智能数据库部署：先尝试基线已有表，再应用迁移，兼容空库/半建库/已部署三种状态
+# 1. migrate resolve 为已有表建立基线（空库时报错被 || true 忽略）
+# 2. migrate deploy 实际执行迁移（已有基线则跳过）
+CMD ["sh", "-c", "(npx prisma migrate resolve --applied 20260718000000_init || true) && npx prisma migrate deploy && node dist/index.js"]
