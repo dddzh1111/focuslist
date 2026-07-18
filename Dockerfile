@@ -29,8 +29,7 @@ COPY --from=server-build /app/server/package.json ./package.json
 COPY --from=client-build /app/client/dist ./dist/public
 
 ENV NODE_ENV=production
-# 生产数据库使用 PostgreSQL，连接串由部署平台通过 DATABASE_URL 环境变量注入。
-# 本地开发可在 .env 中设置指向本地/容器 Postgres 的 DATABASE_URL。
+# DATABASE_URL 由 CloudBase 运行时环境变量注入，不在此处硬编码
 ENV SERVER_PORT=3001
 
 EXPOSE 3001
