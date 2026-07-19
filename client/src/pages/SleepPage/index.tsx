@@ -27,6 +27,16 @@ import {
   RiseOutlined,
   ClockCircleOutlined,
 } from '@ant-design/icons';
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  ReferenceLine,
+} from 'recharts';
 import dayjs, { Dayjs } from 'dayjs';
 import {
   getSleepRecords,
@@ -155,6 +165,36 @@ function SleepPage() {
 
   const avgDuration = stats?.avgDurationMinutes || 0;
 
+  const latestNoWake = records.find((r) => !r.wakeTime);
+
+  const handleQuickSleep = async () => {
+    try {
+      const now = dayjs();
+      const wakeDate = now.hour() < 12 ? now : now.add(1, 'day');
+      await createSleepRecord({
+        date: wakeDate.format('YYYY-MM-DD'),
+        sleepTime: now.toISOString(),
+      });
+      message.success('已记录入睡时间，晚安~ 🌙');
+      fetchData();
+    } catch {
+      message.error('记录失败');
+    }
+  };
+
+  const handleQuickWake = async () => {
+    if (!latestNoWake) return;
+    try {
+      await updateSleepRecord(latestNoWake.id, {
+        wakeTime: dayjs().toISOString(),
+      });
+      message.success('起床打卡成功！☀️');
+      fetchData();
+    } catch {
+      message.error('打卡失败');
+    }
+  };
+
   return (
     <div style={{ padding: isMobile ? 12 : 24 }}>
       <div
@@ -187,6 +227,50 @@ function SleepPage() {
           记录睡眠
         </Button>
       </div>
+
+      <Row gutter={isMobile ? [8, 8] : [16, 16]} style={{ marginBottom: isMobile ? 16 : 20 }}>
+        <Col xs={12}>
+          <Button
+            block
+            size="large"
+            icon={<MoonOutlined />}
+            onClick={handleQuickSleep}
+            style={{
+              height: isMobile ? 48 : 56,
+              borderRadius: 14,
+              background: 'linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%)',
+              color: '#fff',
+              border: 'none',
+              fontSize: isMobile ? 14 : 15,
+              fontWeight: 500,
+            }}
+          >
+            🌙 开始睡觉
+          </Button>
+        </Col>
+        <Col xs={12}>
+          <Button
+            block
+            size="large"
+            icon={<RiseOutlined />}
+            onClick={handleQuickWake}
+            disabled={!latestNoWake}
+            style={{
+              height: isMobile ? 48 : 56,
+              borderRadius: 14,
+              background: latestNoWake
+                ? 'linear-gradient(135deg, #F59E0B 0%, #FBBF24 100%)'
+                : '#F3F4F6',
+              color: latestNoWake ? '#fff' : '#9CA3AF',
+              border: 'none',
+              fontSize: isMobile ? 14 : 15,
+              fontWeight: 500,
+            }}
+          >
+            ☀️ 起床打卡
+          </Button>
+        </Col>
+      </Row>
 
       <Row gutter={isMobile ? [8, 8] : [16, 16]} style={{ marginBottom: isMobile ? 16 : 24 }}>
         <Col xs={12} md={6}>
@@ -279,6 +363,58 @@ function SleepPage() {
               }
               valueStyle={{ fontSize: isMobile ? 20 : 24, color: '#D97706' }}
             />
+          </Card>
+        </Col>
+      </Row>
+
+      <Row gutter={isMobile ? [8, 8] : [16, 16]} style={{ marginBottom: isMobile ? 16 : 24 }}>
+        <Col xs={24}>
+          <Card
+            title={
+              <Text strong style={{ fontSize: isMobile ? 15 : 16 }}>
+                睡眠趋势
+              </Text>
+            }
+            style={{ borderRadius: 12 }}
+            bodyStyle={{ padding: isMobile ? 12 : 16 }}
+          >
+            {records.filter((r) => r.durationMinutes).length === 0 ? (
+              <Empty description="暂无数据，记录睡眠后查看趋势" style={{ padding: '30px 0' }} />
+            ) : (
+              <ResponsiveContainer width="100%" height={isMobile ? 200 : 260}>
+                <LineChart
+                  data={[...records].reverse().filter((r) => r.durationMinutes).map((r) => ({
+                    dateLabel: dayjs(r.date).format('MM/DD'),
+                    hours: Number((r.durationMinutes! / 60).toFixed(1)),
+                    quality: r.quality,
+                  }))}
+                  margin={{ top: 5, right: 20, bottom: 5, left: 0 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
+                  <XAxis dataKey="dateLabel" tick={{ fontSize: 11 }} stroke="#94A3B8" />
+                  <YAxis
+                    tick={{ fontSize: 11 }}
+                    stroke="#94A3B8"
+                    domain={[0, 'dataMax + 1']}
+                    tickFormatter={(val) => `${val}h`}
+                  />
+                  <Tooltip
+                    formatter={(value: number) => [`${value} 小时`, '睡眠时长']}
+                    labelFormatter={(label) => `${label}`}
+                    contentStyle={{ borderRadius: 8, border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                  />
+                  <ReferenceLine y={8} stroke="#22C55E" strokeDasharray="5 5" label={{ value: '推荐8h', position: 'right', fontSize: 10, fill: '#22C55E' }} />
+                  <Line
+                    type="monotone"
+                    dataKey="hours"
+                    stroke="#8B5CF6"
+                    strokeWidth={2.5}
+                    dot={{ fill: '#8B5CF6', strokeWidth: 2, r: 4 }}
+                    activeDot={{ r: 6, fill: '#8B5CF6' }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            )}
           </Card>
         </Col>
       </Row>

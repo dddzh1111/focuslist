@@ -79,7 +79,7 @@ router.get(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const userId = (req as Request & { userId: string }).userId;
-      const record = await sleepService.getByDate(userId, req.params.date);
+      const record = await sleepService.getByDate(userId, req.params.date as string);
       if (!record) {
         throw new NotFoundError('睡眠记录不存在');
       }
@@ -112,7 +112,7 @@ router.put(
     try {
       const userId = (req as Request & { userId: string }).userId;
       const validatedBody = (req as any).validatedBody || req.body;
-      const record = await sleepService.update(userId, req.params.id, validatedBody);
+      const record = await sleepService.update(userId, req.params.id as string, validatedBody);
       if (!record) {
         throw new NotFoundError('睡眠记录不存在');
       }
@@ -128,11 +128,11 @@ router.delete(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const userId = (req as Request & { userId: string }).userId;
-      const deleted = await sleepService.delete(userId, req.params.id);
+      const deleted = await sleepService.delete(userId, req.params.id as string);
       if (!deleted) {
         throw new NotFoundError('睡眠记录不存在');
       }
-      success(res, null, { message: '删除成功' });
+      success(res, null);
     } catch (err) {
       next(err);
     }

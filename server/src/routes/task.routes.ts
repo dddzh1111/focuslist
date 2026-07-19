@@ -66,9 +66,8 @@ router.get('/:id/pomodoros', async (req: Request, res: Response, next: NextFunct
     const userId = (req as Request & { userId: string }).userId;
     const page = parseInt(req.query.page as string) || 1;
     const pageSize = parseInt(req.query.pageSize as string) || 20;
-    // 直接返回该任务的番茄记录
     const { pomodoroService } = await import('../services/pomodoro.service');
-    const result = await pomodoroService.getAll(userId, page, pageSize);
+    const result = await pomodoroService.getByTaskId(userId, req.params.id as string, page, pageSize);
     success(res, result.records, {
       page: result.page,
       pageSize: result.pageSize,

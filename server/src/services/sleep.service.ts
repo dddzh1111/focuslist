@@ -20,7 +20,13 @@ function calculateDurationMinutes(sleepTime: string, wakeTime?: string): number 
   const sleep = new Date(sleepTime).getTime();
   const wake = new Date(wakeTime).getTime();
   if (isNaN(sleep) || isNaN(wake)) return null;
-  return Math.round((wake - sleep) / (1000 * 60));
+  let diffMs = wake - sleep;
+  if (diffMs < 0) {
+    diffMs += 24 * 60 * 60 * 1000;
+  }
+  const minutes = Math.round(diffMs / (1000 * 60));
+  if (minutes > 24 * 60) return null;
+  return minutes;
 }
 
 export const sleepService = {

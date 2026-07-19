@@ -201,20 +201,39 @@ export const taskService = {
     const task = await prisma.task.findFirst({ where: { id, userId } });
     if (!task) throw new Error('任务不存在');
 
-    const data: Record<string, unknown> = { status };
-    if (status === 'DONE') {
-      data.completedAt = new Date();
-      // 如果是短期任务且有来源长期任务，自动递增来源的 completedChapters
-      if (task.sourceTaskId && !task.isLongTerm) {
-        await prisma.task.update({
-          where: { id: task.sourceTaskId },
-          data: { completedChapters: { increment: 1 } },
+    const wasDone = task.status === 'DONE';
+    const isNowDone = status === 'DONE';
+
+    return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      const data: Record<string, unknown> = { status };
+
+      if (isNowDone && !wasDone) {
+        data.completedAt = new Date();
+        if (task.sourceTaskId && !task.isLongTerm) {
+          await tx.task.update({
+            where: { id: task.sourceTaskId, userId },
+            data: { completedChapters: { increment: 1 } },
+          });
+        }
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        await tx.dailyStats.upsert({
+          where: { userId_date: { userId, date: today } },
+          create: { userId, date: today, completedTasks: 1 },
+          update: { completedTasks: { increment: 1 } },
         });
+      } else if (!isNowDone && wasDone) {
+        data.completedAt = null;
+        if (task.sourceTaskId && !task.isLongTerm) {
+          await tx.task.update({
+            where: { id: task.sourceTaskId, userId },
+            data: { completedChapters: { decrement: 1 } },
+          });
+        }
       }
-    } else {
-      data.completedAt = null;
-    }
-    return prisma.task.update({ where: { id, userId }, data });
+
+      return tx.task.update({ where: { id, userId }, data });
+    });
   },
 
   async delete(id: string, userId: string) {

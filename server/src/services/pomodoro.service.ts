@@ -81,6 +81,23 @@ export const pomodoroService = {
     return { records, total, page, pageSize, totalPages: Math.ceil(total / pageSize) };
   },
 
+  async getByTaskId(userId: string, taskId: string, page = 1, pageSize = 20) {
+    const where = { userId, taskId };
+    const [records, total] = await Promise.all([
+      prisma.pomodoroRecord.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+        include: {
+          task: { select: { id: true, title: true } },
+        },
+      }),
+      prisma.pomodoroRecord.count({ where }),
+    ]);
+    return { records, total, page, pageSize, totalPages: Math.ceil(total / pageSize) };
+  },
+
   async getToday(userId: string) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
