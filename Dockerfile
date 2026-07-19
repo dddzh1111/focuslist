@@ -42,5 +42,5 @@ ENV SERVER_PORT=3001
 
 EXPOSE 3001
 
-# 数据库部署：带详细日志，失败时直接退出便于定位
-CMD set -e; echo '=== Step 1: Check DATABASE_URL ==='; if [ -z "$DATABASE_URL" ]; then echo 'ERROR: DATABASE_URL is not set!'; exit 1; fi; echo 'DATABASE_URL OK'; echo '=== Step 2: Clean public schema ==='; npx prisma db execute --file prisma/reset-migrations.sql --schema prisma/schema.prisma 2>&1; echo '=== Step 3: Run migrate deploy ==='; npx prisma migrate deploy 2>&1; echo '=== Step 4: Start server ==='; node dist/index.js
+# 数据库部署：用 db push 直接同步 schema（不受 tencentdb 系统表影响），再用 migrate resolve 建立迁移记录供后续使用
+CMD set -e; echo '=== Step 1: Check DATABASE_URL ==='; if [ -z "$DATABASE_URL" ]; then echo 'ERROR: DATABASE_URL is not set!'; exit 1; fi; echo 'DATABASE_URL OK'; echo '=== Step 2: Clean Deng owned tables ==='; npx prisma db execute --file prisma/reset-migrations.sql --schema prisma/schema.prisma 2>&1; echo '=== Step 3: db push (create tables) ==='; npx prisma db push --accept-data-loss 2>&1; echo '=== Step 4: Mark migration as applied ==='; npx prisma migrate resolve --applied 20260718000000_init 2>&1 || true; echo '=== Step 5: Start server ==='; node dist/index.js
