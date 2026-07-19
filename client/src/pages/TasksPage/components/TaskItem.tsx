@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card, Checkbox, Tag, Typography, Button, Space, Popconfirm, Modal, message, Progress } from 'antd';
+import { Card, Checkbox, Tag, Typography, Button, Space, Popconfirm, Modal, message, Progress, Grid } from 'antd';
 import {
   EditOutlined,
   DeleteOutlined,
@@ -15,6 +15,7 @@ import type { Task } from '@/types/task';
 import TaskForm, { type TaskFormValues } from './TaskForm';
 
 const { Text } = Typography;
+const { useBreakpoint } = Grid;
 
 const priorityConfig: Record<string, { color: string; label: string }> = {
   HIGH: { color: '#EF4444', label: '高' },
@@ -38,6 +39,8 @@ function TaskItem({ task }: TaskItemProps) {
   const [editOpen, setEditOpen] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false);
   const navigate = useNavigate();
+  const screens = useBreakpoint();
+  const isMobile = !screens.md;
 
   const done = task.status === 'DONE';
   const isLongTerm = task.isLongTerm;
@@ -74,7 +77,6 @@ function TaskItem({ task }: TaskItemProps) {
     }
   };
 
-  // Get section name
   let sectionName = '';
   if (task.sectionId && filters.listId) {
     const sections = sectionsByListId[filters.listId];
@@ -99,170 +101,253 @@ function TaskItem({ task }: TaskItemProps) {
     totalChapters: task.totalChapters || undefined,
   };
 
+  const cardPadding = isMobile ? '10px 12px' : '12px 16px';
+  const titleFontSize = isMobile ? 14 : 15;
+  const gapSize = isMobile ? 8 : 12;
+
   return (
     <>
       <Card
         size="small"
         style={{
-          marginBottom: 8,
+          marginBottom: isMobile ? 6 : 8,
           opacity: done ? 0.6 : 1,
           border: isLongTerm ? '1px solid #8B5CF6' : '1px solid var(--color-border)',
           borderLeft: isLongTerm ? '3px solid #8B5CF6' : undefined,
           transition: 'all 0.2s ease',
+          borderRadius: isMobile ? 8 : 8,
         }}
-        bodyStyle={{ padding: '12px 16px' }}
+        bodyStyle={{ padding: cardPadding }}
       >
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-          {/* 短期任务：整体完成勾选框；长期任务：也保留整体勾选 */}
-          <Checkbox checked={done} onChange={handleStatusToggle} style={{ marginTop: 2 }} />
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: gapSize }}>
+          <Checkbox checked={done} onChange={handleStatusToggle} style={{ marginTop: 2, flexShrink: 0 }} />
 
-          <div style={{ flex: 1 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ marginBottom: isMobile ? 4 : 4 }}>
               <Text
                 delete={done}
                 style={{
                   fontWeight: 500,
-                  fontSize: 15,
+                  fontSize: titleFontSize,
                   color: done ? 'var(--color-text-muted)' : 'var(--color-text)',
+                  display: 'block',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
                 }}
               >
                 {task.title}
               </Text>
+            </div>
+
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: isMobile ? 6 : 6 }}>
               {isLongTerm && (
-                <Tag color="purple" style={{ margin: 0 }}>长期</Tag>
+                <Tag color="purple" style={{ margin: 0, fontSize: 11, padding: '0 6px' }}>长期</Tag>
               )}
               {!isLongTerm && task.sourceTask && (
-                <Tag color="blue" style={{ margin: 0, fontSize: 11 }}>
+                <Tag color="blue" style={{ margin: 0, fontSize: 11, padding: '0 6px' }}>
                   来源: {task.sourceTask.title}
                 </Tag>
               )}
               {sectionName && (
-                <Tag color="blue" style={{ margin: 0, fontSize: 11 }}>
+                <Tag color="blue" style={{ margin: 0, fontSize: 11, padding: '0 6px' }}>
                   {sectionName}
                 </Tag>
               )}
-              <Tag color={priorityConfig[task.priority]?.color} style={{ margin: 0 }}>
+              <Tag color={priorityConfig[task.priority]?.color} style={{ margin: 0, fontSize: 11, padding: '0 6px' }}>
                 {priorityConfig[task.priority]?.label}
               </Tag>
-              <Tag style={{ margin: 0 }}>{statusConfig[task.status]}</Tag>
+              <Tag style={{ margin: 0, fontSize: 11, padding: '0 6px' }}>{statusConfig[task.status]}</Tag>
             </div>
 
-            {/* 长期任务：章节进度概览（纯展示） */}
             {isLongTerm && task.totalChapters > 0 && (
-              <div style={{ marginTop: 8, marginBottom: 4, display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ marginTop: 4, marginBottom: 4, display: 'flex', alignItems: 'center', gap: 8 }}>
                 <Progress
                   percent={chapterProgress}
                   size="small"
                   strokeColor="#8B5CF6"
-                  style={{ flex: 1, maxWidth: 200, marginBottom: 0 }}
+                  style={{ flex: 1, marginBottom: 0 }}
                 />
-                <Text type="secondary" style={{ fontSize: 12, whiteSpace: 'nowrap' }}>
+                <Text type="secondary" style={{ fontSize: 11, whiteSpace: 'nowrap' }}>
                   {task.completedChapters}/{task.totalChapters} 章
                 </Text>
               </div>
             )}
 
-            {/* 短期任务描述 */}
             {!isLongTerm && task.description && (
-              <Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 2 }}>
+              <Text
+                type="secondary"
+                style={{
+                  fontSize: 12,
+                  display: '-webkit-box',
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: 'vertical',
+                  overflow: 'hidden',
+                  marginTop: 2,
+                  marginBottom: 4,
+                  lineHeight: 1.5,
+                }}
+              >
                 {task.description}
               </Text>
             )}
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 4 }}>
-              <Text type="secondary" style={{ fontSize: 12 }}>
-                番茄: {task.completedPomos}/{task.estimatedPomos || '-'}
+            <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 12 : 16, marginTop: 4 }}>
+              <Text type="secondary" style={{ fontSize: 11 }}>
+                🍅 {task.completedPomos}/{task.estimatedPomos || '-'}
               </Text>
-              <Text type="secondary" style={{ fontSize: 12 }}>
-                专注: {Math.floor(task.totalFocusTime / 60)}分钟
+              <Text type="secondary" style={{ fontSize: 11 }}>
+                ⏱ {Math.floor(task.totalFocusTime / 60)}分钟
               </Text>
             </div>
-          </div>
 
-          <Space size="small">
-            {/* 每日任务视图：执行、完成、删除 */}
-            {isDailyView && !isLongTerm && (
-              <>
+            {isMobile && (
+              <div style={{ display: 'flex', gap: 4, marginTop: 8, paddingTop: 8, borderTop: '1px solid var(--color-border)' }}>
+                {isDailyView && !isLongTerm && (
+                  <>
+                    <Button
+                      type="primary"
+                      size="small"
+                      icon={<CaretRightOutlined />}
+                      onClick={() => navigate(`/pomodoro?taskId=${task.id}`)}
+                      disabled={done}
+                      style={{ flex: 1, fontSize: 12 }}
+                    >
+                      专注
+                    </Button>
+                    <Button
+                      size="small"
+                      icon={<CheckOutlined />}
+                      onClick={handleStatusToggle}
+                      style={{ flex: 1, fontSize: 12, color: done ? undefined : '#22C55E', borderColor: done ? undefined : '#22C55E' }}
+                    >
+                      {done ? '撤销' : '完成'}
+                    </Button>
+                  </>
+                )}
+                {(!isDailyView || isLongTerm) && isLongTerm && (
+                  <Button
+                    type="primary"
+                    size="small"
+                    icon={<PlusOutlined />}
+                    onClick={handleSelectToday}
+                    style={{ flex: 1, fontSize: 12 }}
+                  >
+                    选到今日
+                  </Button>
+                )}
                 <Button
-                  type="primary"
                   size="small"
-                  icon={<CaretRightOutlined />}
-                  onClick={() => navigate(`/pomodoro?taskId=${task.id}`)}
-                  title="开始专注"
-                  disabled={done}
+                  icon={<EyeOutlined />}
+                  onClick={() => setDetailOpen(true)}
+                  style={{ flex: 1, fontSize: 12 }}
                 >
-                  执行
+                  详情
                 </Button>
-                <Button
-                  type="text"
-                  size="small"
-                  icon={<CheckOutlined />}
-                  onClick={handleStatusToggle}
-                  title={done ? '标记为未完成' : '标记完成'}
-                  style={{ color: done ? undefined : '#22C55E' }}
-                />
                 <Popconfirm
-                  title="删除任务"
-                  description="确定删除此每日任务吗？"
+                  title={isLongTerm ? '删除长期任务' : '删除任务'}
+                  description="删除后将无法恢复，确定删除吗？"
                   onConfirm={() => deleteTask(task.id)}
                   okText="确定"
                   cancelText="取消"
                   getPopupContainer={(node) => node.parentElement || document.body}
                 >
                   <Button
-                    type="text"
                     size="small"
                     danger
                     icon={<DeleteOutlined />}
-                    title="删除"
-                  />
+                    style={{ flex: 1, fontSize: 12 }}
+                  >
+                    删除
+                  </Button>
                 </Popconfirm>
-              </>
+              </div>
             )}
+          </div>
 
-            {/* 长期任务视图：选取到今天、编辑、删除 */}
-            {(!isDailyView || isLongTerm) && isLongTerm && (
+          {!isMobile && (
+            <Space size="small" direction="vertical" style={{ flexShrink: 0 }}>
+              {isDailyView && !isLongTerm && (
+                <>
+                  <Button
+                    type="primary"
+                    size="small"
+                    icon={<CaretRightOutlined />}
+                    onClick={() => navigate(`/pomodoro?taskId=${task.id}`)}
+                    title="开始专注"
+                    disabled={done}
+                  >
+                    执行
+                  </Button>
+                  <Button
+                    type="text"
+                    size="small"
+                    icon={<CheckOutlined />}
+                    onClick={handleStatusToggle}
+                    title={done ? '标记为未完成' : '标记完成'}
+                    style={{ color: done ? undefined : '#22C55E' }}
+                  />
+                  <Popconfirm
+                    title="删除任务"
+                    description="确定删除此每日任务吗？"
+                    onConfirm={() => deleteTask(task.id)}
+                    okText="确定"
+                    cancelText="取消"
+                    getPopupContainer={(node) => node.parentElement || document.body}
+                  >
+                    <Button
+                      type="text"
+                      size="small"
+                      danger
+                      icon={<DeleteOutlined />}
+                      title="删除"
+                    />
+                  </Popconfirm>
+                </>
+              )}
+
+              {(!isDailyView || isLongTerm) && isLongTerm && (
+                <Button
+                  type="text"
+                  size="small"
+                  icon={<PlusOutlined />}
+                  onClick={handleSelectToday}
+                  title="选取到今天"
+                  style={{ color: '#3B82F6' }}
+                />
+              )}
+
               <Button
                 type="text"
                 size="small"
-                icon={<PlusOutlined />}
-                onClick={handleSelectToday}
-                title="选取到今天"
-                style={{ color: '#3B82F6' }}
+                icon={<EyeOutlined />}
+                onClick={() => setDetailOpen(true)}
+                title="查看详情"
               />
-            )}
-
-            <Button
-              type="text"
-              size="small"
-              icon={<EyeOutlined />}
-              onClick={() => setDetailOpen(true)}
-              title="查看详情"
-            />
-            <Button
-              type="text"
-              size="small"
-              icon={<EditOutlined />}
-              onClick={() => setEditOpen(true)}
-              title="编辑"
-            />
-            <Popconfirm
-              title={isLongTerm ? '删除长期任务' : '删除任务'}
-              description="删除后将无法恢复，确定删除吗？"
-              onConfirm={() => deleteTask(task.id)}
-              okText="确定"
-              cancelText="取消"
-              getPopupContainer={(node) => node.parentElement || document.body}
-            >
               <Button
                 type="text"
                 size="small"
-                danger
-                icon={<DeleteOutlined />}
-                title="删除"
+                icon={<EditOutlined />}
+                onClick={() => setEditOpen(true)}
+                title="编辑"
               />
-            </Popconfirm>
-          </Space>
+              <Popconfirm
+                title={isLongTerm ? '删除长期任务' : '删除任务'}
+                description="删除后将无法恢复，确定删除吗？"
+                onConfirm={() => deleteTask(task.id)}
+                okText="确定"
+                cancelText="取消"
+                getPopupContainer={(node) => node.parentElement || document.body}
+              >
+                <Button
+                  type="text"
+                  size="small"
+                  danger
+                  icon={<DeleteOutlined />}
+                  title="删除"
+                />
+              </Popconfirm>
+            </Space>
+          )}
         </div>
       </Card>
 
@@ -278,7 +363,8 @@ function TaskItem({ task }: TaskItemProps) {
         open={detailOpen}
         onCancel={() => setDetailOpen(false)}
         footer={null}
-        width={480}
+        width={isMobile ? '90vw' : 480}
+        style={isMobile ? { top: 20 } : undefined}
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12, padding: '8px 0' }}>
           <div>
