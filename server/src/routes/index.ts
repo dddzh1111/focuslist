@@ -6,6 +6,7 @@ import calendarRoutes from './calendar.routes';
 import statsRoutes from './stats.routes';
 import settingsRoutes from './settings.routes';
 import sectionRoutes from './section.routes';
+import sleepRoutes from './sleep.routes';
 
 const router = Router();
 
@@ -15,6 +16,7 @@ router.use('/pomodoros', pomodoroRoutes);
 router.use('/calendar', calendarRoutes);
 router.use('/stats', statsRoutes);
 router.use('/settings', settingsRoutes);
+router.use('/sleep', sleepRoutes);
 router.use('/', sectionRoutes);
 
 export default router;

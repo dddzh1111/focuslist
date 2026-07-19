@@ -6,6 +6,7 @@ import {
   CalendarOutlined,
   BarChartOutlined,
   SettingOutlined,
+  MoonOutlined,
 } from '@ant-design/icons';
 
 interface SidebarProps {
@@ -30,6 +31,11 @@ function Sidebar({ onClickItem }: SidebarProps) {
       key: '/pomodoro',
       icon: <ClockCircleOutlined />,
       label: <Link to="/pomodoro" onClick={handleClick}>番茄</Link>,
+    },
+    {
+      key: '/sleep',
+      icon: <MoonOutlined />,
+      label: <Link to="/sleep" onClick={handleClick}>睡眠</Link>,
     },
     {
       key: '/calendar',

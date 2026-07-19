@@ -5,6 +5,7 @@ import PomodoroPage from './pages/PomodoroPage';
 import CalendarPage from './pages/CalendarPage';
 import StatsPage from './pages/StatsPage';
 import SettingsPage from './pages/SettingsPage';
+import SleepPage from './pages/SleepPage';
 
 function App() {
   return (
@@ -13,6 +14,7 @@ function App() {
         <Route path="/" element={<Navigate to="/tasks" replace />} />
         <Route path="/tasks" element={<TasksPage />} />
         <Route path="/pomodoro" element={<PomodoroPage />} />
+        <Route path="/sleep" element={<SleepPage />} />
         <Route path="/calendar" element={<CalendarPage />} />
         <Route path="/stats" element={<StatsPage />} />
         <Route path="/settings" element={<SettingsPage />} />
