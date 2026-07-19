@@ -42,5 +42,5 @@ ENV SERVER_PORT=3001
 
 EXPOSE 3001
 
-# 数据库部署：带详细日志，方便排查问题
-CMD ["sh", "-c", "echo '=== Step 1: Check DATABASE_URL ===' && if [ -z \"$DATABASE_URL\" ]; then echo 'ERROR: DATABASE_URL is not set! Please add it in CloudBase env config.'; exit 1; fi && echo 'DATABASE_URL OK' && echo '=== Step 2: Clean old migrations ===' && (npx prisma db execute --file prisma/reset-migrations.sql --schema prisma/schema.prisma 2>&1 || true) && echo '=== Step 3: Run migrate deploy ===' && npx prisma migrate deploy 2>&1 && echo '=== Step 4: Start server ===' && node dist/index.js"]
+# 数据库部署：带详细日志，失败时直接退出便于定位
+CMD ["sh", "-c", "set -e; echo '=== Step 1: Check DATABASE_URL ==='; if [ -z \"$DATABASE_URL\" ]; then echo 'ERROR: DATABASE_URL is not set! Please add it in CloudBase env config.'; exit 1; fi; echo 'DATABASE_URL OK'; echo '=== Step 2: Clean public schema ==='; npx prisma db execute --file prisma/reset-migrations.sql --schema prisma/schema.prisma 2>&1; echo '=== Step 3: Run migrate deploy ==='; npx prisma migrate deploy 2>&1; echo '=== Step 4: Start server ==='; node dist/index.js"
