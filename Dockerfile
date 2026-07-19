@@ -1,6 +1,10 @@
 # ============ 1. 构建前端 ============
 FROM node:20-alpine AS client-build
 WORKDIR /app/client
+
+# 使用国内 npm 镜像，避免 CloudBase 构建环境连接 npm 官方源超时
+RUN npm config set registry https://registry.npmmirror.com
+
 COPY client/package.json client/package-lock.json ./
 RUN npm ci
 COPY client/ ./
@@ -9,6 +13,10 @@ RUN npm run build
 # ============ 2. 构建后端 ============
 FROM node:20-alpine AS server-build
 WORKDIR /app/server
+
+# 使用国内 npm 镜像，避免 CloudBase 构建环境连接 npm 官方源超时
+RUN npm config set registry https://registry.npmmirror.com
+
 COPY server/package.json server/package-lock.json ./
 RUN npm ci
 COPY server/ ./
