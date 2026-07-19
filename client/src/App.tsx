@@ -6,6 +6,7 @@ import CalendarPage from './pages/CalendarPage';
 import StatsPage from './pages/StatsPage';
 import SettingsPage from './pages/SettingsPage';
 import SleepPage from './pages/SleepPage';
+import PWAPrompt from './components/PWAPrompt';
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
         <Route path="/stats" element={<StatsPage />} />
         <Route path="/settings" element={<SettingsPage />} />
       </Routes>
+      <PWAPrompt />
     </AppLayout>
   );
 }
