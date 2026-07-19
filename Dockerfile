@@ -34,7 +34,7 @@ ENV SERVER_PORT=3001
 
 EXPOSE 3001
 
-# 智能数据库部署：先尝试基线已有表，再应用迁移，兼容空库/半建库/已部署三种状态
-# 1. migrate resolve 为已有表建立基线（空库时报错被 || true 忽略）
-# 2. migrate deploy 实际执行迁移（已有基线则跳过）
-CMD ["sh", "-c", "(npx prisma migrate resolve --applied 20260718000000_init || true) && npx prisma migrate deploy && node dist/index.js"]
+# 数据库部署：
+# 1. 先清理可能残留的 _prisma_migrations 记录（上次 resolve 标记但未真正建表）
+# 2. 执行 migrate deploy 真正创建所有表
+CMD ["sh", "-c", "(npx prisma db execute --file prisma/reset-migrations.sql --schema prisma/schema.prisma || true) && npx prisma migrate deploy && node dist/index.js"]
