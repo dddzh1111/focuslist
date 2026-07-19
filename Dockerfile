@@ -42,7 +42,5 @@ ENV SERVER_PORT=3001
 
 EXPOSE 3001
 
-# 数据库部署：
-# 1. 先清理可能残留的 _prisma_migrations 记录（上次 resolve 标记但未真正建表）
-# 2. 执行 migrate deploy 真正创建所有表
-CMD ["sh", "-c", "(npx prisma db execute --file prisma/reset-migrations.sql --schema prisma/schema.prisma || true) && npx prisma migrate deploy && node dist/index.js"]
+# 数据库部署：带详细日志，方便排查问题
+CMD ["sh", "-c", "echo '=== Step 1: Check DATABASE_URL ===' && if [ -z \"$DATABASE_URL\" ]; then echo 'ERROR: DATABASE_URL is not set! Please add it in CloudBase env config.'; exit 1; fi && echo 'DATABASE_URL OK' && echo '=== Step 2: Clean old migrations ===' && (npx prisma db execute --file prisma/reset-migrations.sql --schema prisma/schema.prisma 2>&1 || true) && echo '=== Step 3: Run migrate deploy ===' && npx prisma migrate deploy 2>&1 && echo '=== Step 4: Start server ===' && node dist/index.js"]
