@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
-import { Typography, Card } from 'antd';
+import { useEffect } from 'react';
+import { Typography } from 'antd';
 import PomodoroSettings from './components/PomodoroSettings';
 import AudioSettings from './components/AudioSettings';
 import ThemeSettings from './components/ThemeSettings';
+import DataManagement from './components/DataManagement';
 import { useSettingsStore } from '@/stores/settingsStore';
 
 const { Title, Text } = Typography;
@@ -27,6 +28,7 @@ function SettingsPage() {
         <PomodoroSettings />
         <AudioSettings />
         <ThemeSettings />
+        <DataManagement />
       </div>
     </div>
   );

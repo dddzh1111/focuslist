@@ -1,6 +1,7 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import type { List, CreateListInput, UpdateListInput } from '@/types/list';
-import * as listApi from '@/api/lists';
+import { generateId, nowISO } from '@/lib/localDb';
 
 interface ListState {
   lists: List[];
@@ -13,49 +14,69 @@ interface ListState {
   reorderLists: (lists: { id: string; sortOrder: number }[]) => Promise<void>;
 }
 
-export const useListStore = create<ListState>((set, get) => ({
-  lists: [],
-  loading: false,
-  error: null,
+const COLORS = ['#3B82F6', '#22C55E', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#14B8A6', '#F97316'];
 
-  fetchLists: async () => {
-    set({ loading: true, error: null });
-    try {
-      const response = await listApi.getLists();
-      set({ lists: response.data, loading: false });
-    } catch (err) {
-      set({ error: '获取清单列表失败', loading: false });
+export const useListStore = create<ListState>()(
+  persist(
+    (set, get) => ({
+      lists: [],
+      loading: false,
+      error: null,
+
+      fetchLists: async () => {
+        set({ loading: true, error: null });
+        set({ loading: false });
+      },
+
+      createList: async (data) => {
+        const now = nowISO();
+        const newList: List = {
+          id: generateId(),
+          name: data.name,
+          color: data.color || COLORS[get().lists.length % COLORS.length],
+          icon: data.icon || '📋',
+          sortOrder: get().lists.length,
+          createdAt: now,
+          updatedAt: now,
+          userId: 'local',
+        };
+        set({ lists: [...get().lists, newList] });
+        return newList;
+      },
+
+      updateList: async (id, data) => {
+        let updated: List | undefined;
+        set({
+          lists: get().lists.map((l) => {
+            if (l.id === id) {
+              updated = { ...l, ...data, updatedAt: nowISO() };
+              return updated;
+            }
+            return l;
+          }),
+        });
+        if (!updated) throw new Error('List not found');
+        return updated;
+      },
+
+      deleteList: async (id) => {
+        set({ lists: get().lists.filter((l) => l.id !== id) });
+      },
+
+      reorderLists: async (lists) => {
+        const listMap = new Map(lists.map((l) => [l.id, l.sortOrder]));
+        set({
+          lists: get()
+            .lists.map((l) => {
+              const sortOrder = listMap.get(l.id);
+              return sortOrder !== undefined ? { ...l, sortOrder } : l;
+            })
+            .sort((a, b) => a.sortOrder - b.sortOrder),
+        });
+      },
+    }),
+    {
+      name: 'focuslist-lists',
     }
-  },
-
-  createList: async (data) => {
-    const response = await listApi.createList(data);
-    set({ lists: [...get().lists, response.data] });
-    return response.data;
-  },
-
-  updateList: async (id, data) => {
-    const response = await listApi.updateList(id, data);
-    set({
-      lists: get().lists.map((l) => (l.id === id ? response.data : l)),
-    });
-    return response.data;
-  },
-
-  deleteList: async (id) => {
-    await listApi.deleteList(id);
-    set({ lists: get().lists.filter((l) => l.id !== id) });
-  },
-
-  reorderLists: async (lists) => {
-    await listApi.reorderLists({ lists });
-    set({
-      lists: get().lists
-        .map((l) => {
-          const updated = lists.find((r) => r.id === l.id);
-          return updated ? { ...l, sortOrder: updated.sortOrder } : l;
-        })
-        .sort((a, b) => a.sortOrder - b.sortOrder),
-    });
-  },
-}));
+  )
+);

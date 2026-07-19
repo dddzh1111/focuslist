@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   Card,
   Typography,
@@ -38,13 +38,7 @@ import {
   ReferenceLine,
 } from 'recharts';
 import dayjs, { Dayjs } from 'dayjs';
-import {
-  getSleepRecords,
-  createSleepRecord,
-  updateSleepRecord,
-  deleteSleepRecord,
-  getSleepStats,
-} from '@/api/sleep';
+import { useSleepStore } from '@/stores/sleepStore';
 import type { SleepRecord, SleepStats } from '@/types/sleep';
 import { qualityConfig } from '@/types/sleep';
 
@@ -61,9 +55,7 @@ interface SleepFormData {
 }
 
 function SleepPage() {
-  const [records, setRecords] = useState<SleepRecord[]>([]);
-  const [stats, setStats] = useState<SleepStats | null>(null);
-  const [loading, setLoading] = useState(false);
+  const { records, getStats, createRecord, updateRecord, deleteRecord } = useSleepStore();
   const [modalOpen, setModalOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState<SleepRecord | null>(null);
   const [formData, setFormData] = useState<SleepFormData>({
@@ -73,29 +65,18 @@ function SleepPage() {
   const screens = useBreakpoint();
   const isMobile = !screens.md;
 
-  const fetchData = async () => {
-    try {
-      setLoading(true);
-      const [recordsRes, statsRes] = await Promise.all([
-        getSleepRecords({ pageSize: 30 }),
-        getSleepStats(),
-      ]);
-      if (recordsRes.success && recordsRes.data) {
-        setRecords(recordsRes.data);
-      }
-      if (statsRes.success && statsRes.data) {
-        setStats(statsRes.data);
-      }
-    } catch {
-      message.error('加载睡眠记录失败');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const stats = useMemo<SleepStats>(() => getStats(), [records, getStats]);
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+  const sortedRecords = useMemo(() => {
+    return [...records].sort((a, b) => dayjs(b.date).valueOf() - dayjs(a.date).valueOf());
+  }, [records]);
+
+  const latestNoWake = useMemo(() => {
+    const sorted = [...records].sort((a, b) =>
+      dayjs(b.createdAt).valueOf() - dayjs(a.createdAt).valueOf()
+    );
+    return sorted.find((r) => !r.wakeTime);
+  }, [records]);
 
   const handleOpenCreate = () => {
     setEditingRecord(null);
@@ -122,7 +103,7 @@ function SleepPage() {
   const handleSubmit = async () => {
     try {
       if (editingRecord) {
-        await updateSleepRecord(editingRecord.id, {
+        await updateRecord(editingRecord.id, {
           sleepTime: formData.sleepTime.toISOString(),
           wakeTime: formData.wakeTime?.toISOString(),
           quality: formData.quality,
@@ -130,7 +111,7 @@ function SleepPage() {
         });
         message.success('更新成功');
       } else {
-        await createSleepRecord({
+        await createRecord({
           date: formData.date.format('YYYY-MM-DD'),
           sleepTime: formData.sleepTime.toISOString(),
           wakeTime: formData.wakeTime?.toISOString(),
@@ -140,7 +121,6 @@ function SleepPage() {
         message.success('打卡成功！');
       }
       setModalOpen(false);
-      fetchData();
     } catch {
       message.error(editingRecord ? '更新失败' : '打卡失败');
     }
@@ -148,9 +128,8 @@ function SleepPage() {
 
   const handleDelete = async (id: string) => {
     try {
-      await deleteSleepRecord(id);
+      await deleteRecord(id);
       message.success('删除成功');
-      fetchData();
     } catch {
       message.error('删除失败');
     }
@@ -165,18 +144,15 @@ function SleepPage() {
 
   const avgDuration = stats?.avgDurationMinutes || 0;
 
-  const latestNoWake = records.find((r) => !r.wakeTime);
-
   const handleQuickSleep = async () => {
     try {
       const now = dayjs();
       const wakeDate = now.hour() < 12 ? now : now.add(1, 'day');
-      await createSleepRecord({
+      await createRecord({
         date: wakeDate.format('YYYY-MM-DD'),
         sleepTime: now.toISOString(),
       });
       message.success('已记录入睡时间，晚安~ 🌙');
-      fetchData();
     } catch {
       message.error('记录失败');
     }
@@ -185,15 +161,25 @@ function SleepPage() {
   const handleQuickWake = async () => {
     if (!latestNoWake) return;
     try {
-      await updateSleepRecord(latestNoWake.id, {
+      await updateRecord(latestNoWake.id, {
         wakeTime: dayjs().toISOString(),
       });
       message.success('起床打卡成功！☀️');
-      fetchData();
     } catch {
       message.error('打卡失败');
     }
   };
+
+  const chartData = useMemo(() => {
+    return [...sortedRecords]
+      .reverse()
+      .filter((r) => r.durationMinutes)
+      .map((r) => ({
+        dateLabel: dayjs(r.date).format('MM/DD'),
+        hours: Number((r.durationMinutes! / 60).toFixed(1)),
+        quality: r.quality,
+      }));
+  }, [sortedRecords]);
 
   return (
     <div style={{ padding: isMobile ? 12 : 24 }}>
@@ -378,16 +364,12 @@ function SleepPage() {
             style={{ borderRadius: 12 }}
             bodyStyle={{ padding: isMobile ? 12 : 16 }}
           >
-            {records.filter((r) => r.durationMinutes).length === 0 ? (
+            {chartData.length === 0 ? (
               <Empty description="暂无数据，记录睡眠后查看趋势" style={{ padding: '30px 0' }} />
             ) : (
               <ResponsiveContainer width="100%" height={isMobile ? 200 : 260}>
                 <LineChart
-                  data={[...records].reverse().filter((r) => r.durationMinutes).map((r) => ({
-                    dateLabel: dayjs(r.date).format('MM/DD'),
-                    hours: Number((r.durationMinutes! / 60).toFixed(1)),
-                    quality: r.quality,
-                  }))}
+                  data={chartData}
                   margin={{ top: 5, right: 20, bottom: 5, left: 0 }}
                 >
                   <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
@@ -428,18 +410,14 @@ function SleepPage() {
         style={{ borderRadius: 12 }}
         bodyStyle={{ padding: isMobile ? 8 : 16 }}
       >
-        {loading ? (
-          <div style={{ textAlign: 'center', padding: 40 }}>
-            <Empty description="加载中..." />
-          </div>
-        ) : records.length === 0 ? (
+        {sortedRecords.length === 0 ? (
           <Empty
             description="还没有睡眠记录，点击上方按钮开始打卡吧"
             style={{ padding: '40px 0' }}
           />
         ) : (
           <List
-            dataSource={records}
+            dataSource={sortedRecords}
             renderItem={(record) => {
               const quality = record.quality ? qualityConfig[record.quality] : null;
               return (

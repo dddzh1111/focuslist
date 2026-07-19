@@ -1,28 +1,55 @@
-import { useEffect, useState } from 'react';
 import { Card, Progress, Collapse, Typography, Tag, Empty, Spin } from 'antd';
-import { getListProgress } from '@/api/stats';
-import type { ListProgress as ListProgressType } from '@/types/stats';
+import { useMemo } from 'react';
+import { useTaskStore } from '@/stores/taskStore';
+import { useListStore } from '@/stores/listStore';
+import { useSectionStore } from '@/stores/sectionStore';
+import type { ListProgress as ListProgressType, SectionProgress } from '@/types/stats';
 
 const { Text, Title } = Typography;
 
 function ListProgress() {
-  const [data, setData] = useState<ListProgressType[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { tasks } = useTaskStore();
+  const { lists } = useListStore();
+  const { sectionsByListId } = useSectionStore();
 
-  useEffect(() => {
-    getListProgress()
-      .then((res) => setData(res.data))
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  }, []);
+  const data = useMemo<ListProgressType[]>(() => {
+    return lists.map((list) => {
+      const listTasks = tasks.filter((t) => t.listId === list.id);
+      const doneTasks = listTasks.filter((t) => t.status === 'DONE');
+      const inProgressTasks = listTasks.filter((t) => t.status === 'IN_PROGRESS');
+      const todoTasks = listTasks.filter((t) => t.status === 'TODO');
+      const completionRate =
+        listTasks.length > 0 ? Math.round((doneTasks.length / listTasks.length) * 100) : 0;
 
-  if (loading) {
-    return (
-      <div style={{ textAlign: 'center', padding: 40 }}>
-        <Spin size="large" />
-      </div>
-    );
-  }
+      const sections = sectionsByListId[list.id] || [];
+      const sectionProgresses: SectionProgress[] = sections.map((section) => {
+        const sectionTasks = listTasks.filter((t) => t.sectionId === section.id);
+        const doneSectionTasks = sectionTasks.filter((t) => t.status === 'DONE');
+        return {
+          sectionId: section.id,
+          name: section.name,
+          totalTasks: sectionTasks.length,
+          doneTasks: doneSectionTasks.length,
+          completionRate:
+            sectionTasks.length > 0
+              ? Math.round((doneSectionTasks.length / sectionTasks.length) * 100)
+              : 0,
+        };
+      });
+
+      return {
+        listId: list.id,
+        listName: list.name,
+        color: list.color,
+        totalTasks: listTasks.length,
+        doneTasks: doneTasks.length,
+        inProgressTasks: inProgressTasks.length,
+        todoTasks: todoTasks.length,
+        completionRate,
+        sections: sectionProgresses,
+      };
+    });
+  }, [tasks, lists, sectionsByListId]);
 
   if (data.length === 0) {
     return <Empty description="暂无清单数据" />;

@@ -1,22 +1,35 @@
 import { Card, Empty } from 'antd';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
-import { useEffect, useState } from 'react';
-import * as statsApi from '@/api/stats';
-import type { ListStats } from '@/api/stats';
+import { useMemo } from 'react';
+import { usePomodoroStore } from '@/stores/pomodoroStore';
+import { useTaskStore } from '@/stores/taskStore';
+import { useListStore } from '@/stores/listStore';
 
 const COLORS = ['#3B82F6', '#22C55E', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
 
 function TaskDistribution() {
-  const [data, setData] = useState<ListStats[]>([]);
+  const { pomodoros } = usePomodoroStore();
+  const { tasks } = useTaskStore();
+  const { lists } = useListStore();
 
-  useEffect(() => {
-    statsApi.getByList().then((res) => setData(res.data)).catch(console.error);
-  }, []);
+  const chartData = useMemo(() => {
+    const listFocusTime: Record<string, number> = {};
 
-  const chartData = data.map((item) => ({
-    name: item.listName,
-    value: Math.round(item.totalFocusSec / 60),
-  }));
+    pomodoros.forEach((p) => {
+      if (!p.completed) return;
+      const task = tasks.find((t) => t.id === p.taskId);
+      if (task && task.listId) {
+        listFocusTime[task.listId] = (listFocusTime[task.listId] || 0) + p.duration;
+      }
+    });
+
+    return lists
+      .map((list) => ({
+        name: list.name,
+        value: Math.round((listFocusTime[list.id] || 0) / 60),
+      }))
+      .filter((item) => item.value > 0);
+  }, [pomodoros, tasks, lists]);
 
   return (
     <Card title="清单专注分布">
