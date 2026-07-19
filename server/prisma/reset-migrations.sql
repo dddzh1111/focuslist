@@ -1,2 +1,13 @@
--- 清理可能残留的 _prisma_migrations 表，让 migrate deploy 重新执行
+-- 清理所有旧表（上次 db push 残留的半建表），让 migrate deploy 全新建表
+-- 按外键依赖顺序删除，避免约束冲突
+DROP TABLE IF EXISTS "PomodoroRecord" CASCADE;
+DROP TABLE IF EXISTS "DailyStats" CASCADE;
+DROP TABLE IF EXISTS "Task" CASCADE;
+DROP TABLE IF EXISTS "Section" CASCADE;
+DROP TABLE IF EXISTS "List" CASCADE;
+DROP TABLE IF EXISTS "User" CASCADE;
 DROP TABLE IF EXISTS "_prisma_migrations" CASCADE;
+-- 删除旧枚举类型
+DROP TYPE IF EXISTS "Priority" CASCADE;
+DROP TYPE IF EXISTS "Status" CASCADE;
+DROP TYPE IF EXISTS "PomodoroType" CASCADE;
