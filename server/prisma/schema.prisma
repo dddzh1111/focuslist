@@ -19,6 +19,8 @@ model User {
   tasks     Task[]
   pomodoros PomodoroRecord[]
   dailyStats DailyStats[]
+
+  @@schema("focuslist")
 }
 
 model List {
@@ -37,6 +39,7 @@ model List {
   sections Section[]
 
   @@index([userId])
+  @@schema("focuslist")
 }
 
 // ==================== 单元分组（清单内编号单元 1,2,3...） ====================
@@ -53,6 +56,7 @@ model Section {
   tasks Task[]
 
   @@index([listId])
+  @@schema("focuslist")
 }
 
 model Task {
@@ -105,6 +109,7 @@ model Task {
   @@index([parentId])
   @@index([userId, isLongTerm])
   @@index([sourceTaskId])
+  @@schema("focuslist")
 }
 
 model PomodoroRecord {
@@ -126,6 +131,7 @@ model PomodoroRecord {
   @@index([userId, createdAt])
   @@index([taskId])
   @@index([userId, type])
+  @@schema("focuslist")
 }
 
 model DailyStats {
@@ -141,22 +147,29 @@ model DailyStats {
 
   @@unique([userId, date])
   @@index([userId, date])
+  @@schema("focuslist")
 }
 
 enum Priority {
   HIGH
   MEDIUM
   LOW
+
+  @@schema("focuslist")
 }
 
 enum Status {
   TODO
   IN_PROGRESS
   DONE
+
+  @@schema("focuslist")
 }
 
 enum PomodoroType {
   FOCUS
   SHORT_BREAK
   LONG_BREAK
+
+  @@schema("focuslist")
 }
